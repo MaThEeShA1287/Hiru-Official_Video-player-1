@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HIRU OFFICIAL — Player</title>
+<link rel="icon" type="image/x-icon" href="hiru official new logo.jpg">
+<style>
+        body {
+           
+            cursor: url('https://cur.cursors-4u.net/cursors/cur-2/cur103.cur'), auto; 
+        }
+    </style>
+<style>
+  :root{
+    --bg:#08121a; --panel:#0b1722; --muted:#9fb0c8; --accent:#06b6d4; --owner:#ffb703; --text:#e6eef6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,var(--bg),#04101a);color:var(--text);-webkit-font-smoothing:antialiased}
+  .app{max-width:1100px;margin:20px auto;padding:14px;display:grid;grid-template-columns:1fr 320px;gap:14px}
+  @media (max-width:900px){ .app{grid-template-columns:1fr;padding:10px} .side{order:2} .main{order:1} }
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05)); border-radius:12px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(90deg,var(--accent),#60a5fa);display:grid;place-items:center;font-weight:800;color:#021623}
+  .owner{font-weight:700}
+  .muted{color:var(--muted);font-size:13px}
+  .player-wrap{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9}
+  video{display:block;width:100%;height:100%;object-fit:cover;background:#000}
+  .top-left{position:absolute;left:12px;top:12px;display:flex;gap:8px;align-items:center}
+  .owner-badge{background:var(--owner);color:#06111a;padding:6px 10px;border-radius:999px;font-weight:700;font-size:13px}
+  .watermark{position:absolute;right:10px;bottom:10px;padding:6px 10px;border-radius:8px;background:rgba(0,0,0,0.28);font-size:13px;color:var(--muted);pointer-events:none}
+  .playlist{display:flex;flex-direction:column;gap:8px;max-height:66vh;overflow:auto;padding-right:6px}
+  .track{display:flex;gap:10px;align-items:center;padding:8px;border-radius:10px;cursor:pointer;transition:background .12s}
+  .track:hover{background:rgba(255,255,255,0.02)}
+  .thumb{width:96px;height:54px;border-radius:8px;background:#081022;flex-shrink:0;display:grid;place-items:center;overflow:hidden}
+  .meta{display:flex;flex-direction:column}
+  .controls{margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .btn{background:rgba(255,255,255,0.03);border:none;padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,var(--accent),#60a5fa);color:#021623}
+  .backdrop{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,rgba(0,0,0,0.6),rgba(0,0,0,0.6));z-index:99999}
+  .login-card{width:380px;max-width:92%;background:var(--panel);padding:18px;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,0.7)}
+  .input{width:100%;padding:10px;border-radius:8px;border:none;margin-bottom:8px;background:rgba(255,255,255,0.02);color:var(--text)}
+  .small{font-size:13px;padding:6px 8px}
+  .success{background:#4caf50;color:#081018}
+  .danger{background:#ff6b6b;color:#081018}
+  .note{font-size:12px;color:var(--muted)}
+  .users-list{max-height:220px;overflow:auto;padding:6px;display:flex;flex-direction:column;gap:8px}
+  .user-row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN / PASSWORD MODAL -->
+<div id="loginBackdrop" class="backdrop" aria-hidden="false">
+  <div class="login-card card" role="dialog" aria-modal="true" aria-label="Login">
+    <h2>Welcome — HIRU OFFICIAL</h2>
+    <div class="note">You can login with username+password, PIN, or Fingerprint (WebAuthn).</div>
+    <input id="usernameInput" class="input" placeholder="Username" autocomplete="username">
+    <input id="passwordInput" class="input" placeholder="Password" type="password" autocomplete="current-password">
+
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <button id="loginBtn" class="btn primary">Enter</button>
+      <button id="guestBtn" class="btn small">Guest</button>
+    </div>
+
+    <hr style="margin:8px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+
+    <h4 style="margin:6px 0">PIN / Fingerprint</h4>
+    <div class="note">If you prefer PIN or biometric, register them from Admin (or below if you are signing up).</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input id="pinInput" class="input" placeholder="PIN (4-8 digits)" inputmode="numeric" maxlength="8">
+      <button id="pinLoginBtn" class="btn">Login with PIN</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="webauthnLoginBtn" class="btn">Login with Fingerprint</button>
+      <button id="webauthnRegisterBtn" class="btn">Register Fingerprint</button>
+    </div>
+
+    <hr style="margin:8px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+
+    <div class="note">Default seeded admin: <strong>-----</strong> / <strong>-------</strong>. After logging in as admin you can add users, set PINs, and register biometrics for accounts.</div>
+  </div>
+</div>
+
+<main class="app" id="app" style="display:none">
+  <section class="main card">
+    <div class="header">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="logo">HO</div>
+        <div>
+          <div class="owner">HIRU OFFICIAL</div>
+          <div class="muted">Secure Video Player</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <div id="currentUser" class="muted"></div>
+        <button id="openAdmin" class="btn small">Admin</button>
+        <button id="logoutBtn" class="btn small danger">Logout</button>
+      </div>
+    </div>
+
+    <div class="player-wrap" id="playerWrap">
+      <video id="player" controls playsinline preload="metadata"></video>
+      <div class="top-left">
+        <div class="owner-badge">HIRU OFFICIAL</div>
+        <div id="videoTitle">Loading...</div>
+      </div>
+      <div class="watermark">Powered by HIRU_OFFICIAL</div>
+    </div>
+
+    <div class="controls">
+      <div>
+        <button id="playBtn" class="btn primary">Play</button>
+        <button id="prevBtn" class="btn small">Prev</button>
+        <button id="nextBtn" class="btn small">Next</button>
+      </div>
+      <div class="note">Tip: admin can export/import the encrypted password DB.</div>
+    </div>
+  </section>
+
+  <aside class="side card">
+    <h3>Playlist</h3>
+    <div class="playlist" id="playlist"></div>
+
+    <div class="admin" id="adminPanel" style="display:none">
+      <h4>Admin — Manage Accounts</h4>
+
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="newUser" class="input" placeholder="username">
+        <input id="newPass" class="input" placeholder="password" type="password">
+        <button id="addUserBtn" class="btn success">Add</button>
+      </div>
+
+      <div class="users-list" id="usersList"></div>
+
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button id="exportBtn" class="btn">Export Password File</button>
+        <input id="importFile" type="file" style="display:none" accept=".hvo">
+        <button id="importBtn" class="btn">Import Password File</button>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+
+      <h4 style="margin:6px 0">User Security (PIN & Fingerprint)</h4>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="pinForUser" class="input" placeholder="PIN for selected user (4-8 digits)" inputmode="numeric" maxlength="8">
+        <button id="setPinBtn" class="btn">Set PIN</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button id="registerBioBtn" class="btn">Register Fingerprint for Selected User</button>
+        <button id="revokeBioBtn" class="btn">Revoke Fingerprint</button>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+      <div>
+        <div style="font-size:13px;color:var(--muted)">Change master password (affects export/import key)</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="oldMaster" class="input" placeholder="current master password" type="password">
+          <input id="newMaster" class="input" placeholder="new master password" type="password">
+          <button id="changeMasterBtn" class="btn">Change</button>
+        </div>
+      </div>
+
+      <div style="margin-top:8px" class="note">WebAuthn (biometric) requires HTTPS or localhost and a platform authenticator (phone fingerprint, Windows Hello, etc.).</div>
+    </div>
+
+    <footer>
+      <div style="margin-top:12px" class="note">Owner: HIRU OFFICIAL • Watermark: Powered by HIRU_OFFICIAL</div>
+    </footer>
+  </aside>
+</main>
+
+<!-- floating mini player -->
+<div id="mini" class="mini" title="Mini player (click to restore)">
+  <video id="miniVideo" muted playsinline></video>
+</div>
+
+<script>
+/* ---------------------------
+   Utilities & Crypto helpers
+   --------------------------- */
+function toUint8(str){ return new TextEncoder().encode(str); }
+function toStr(buf){ return new TextDecoder().decode(buf); }
+function bufToBase64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function base64ToBuf(b64){ const bin = atob(b64); const arr = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return arr.buffer; }
+async function sha256(buf){ return await crypto.subtle.digest('SHA-256', buf); }
+function randBytes(n){ const b=new Uint8Array(n); crypto.getRandomValues(b); return b.buffer; }
+
+/* Hash with salt for password/PIN storage */
+async function hashWithSalt(secret, saltBuff){
+  const salt = saltBuff || randBytes(16);
+  const combined = new Uint8Array(salt.byteLength + toUint8(secret).length);
+  combined.set(new Uint8Array(salt), 0);
+  combined.set(new Uint8Array(toUint8(secret)), salt.byteLength);
+  const hashBuf = await sha256(combined.buffer);
+  return { saltB64: bufToBase64(salt), hashB64: bufToBase64(hashBuf) };
+}
+
+/* PBKDF2 -> AES helpers used earlier (re-use from previous system) */
+async function deriveKey(password, saltBuffer){
+  const pwKey = await crypto.subtle.importKey('raw', toUint8(password), {name:'PBKDF2'}, false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({
+    name: 'PBKDF2',
+    salt: saltBuffer,
+    iterations: 200_000,
+    hash: 'SHA-256'
+  }, pwKey, { name: 'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+  return key;
+}
+async function encryptWithPassword(password, obj){
+  const salt = randBytes(16), iv = randBytes(12);
+  const key = await deriveKey(password, salt);
+  const plain = toUint8(JSON.stringify(obj));
+  const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, plain);
+  return { salt: bufToBase64(salt), iv: bufToBase64(iv), ct: bufToBase64(ct) };
+}
+async function decryptWithPassword(password, {salt, iv, ct}){
+  const saltBuf = base64ToBuf(salt), ivBuf = base64ToBuf(iv), ctBuf = base64ToBuf(ct);
+  const key = await deriveKey(password, saltBuf);
+  const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ivBuf }, key, ctBuf);
+  return JSON.parse(toStr(plainBuf));
+}
+
+/* ---------------------------
+   Password DB (localStorage)
+   DB schema:
+   { master: {salt, hash}, users: [ { username, salt, hash, isAdmin, pinSalt?, pinHash?, webAuthn?: {idB64, publicKeyB64} } ] }
+   --------------------------- */
+const DB_KEY = 'hvo_password_db_v1';
+function loadDB(){ try{ return JSON.parse(localStorage.getItem(DB_KEY)); }catch(e){ return null; } }
+function saveDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+/* init default admin */
+async function initDBIfNeeded(){
+  let db = loadDB();
+  if(db) return db;
+  const masterPwd = 'hiru123';
+  const master = await hashWithSalt(masterPwd);
+  const adminUser = await hashWithSalt('hiru123');
+  db = {
+    master: { salt: master.saltB64, hash: master.hashB64 },
+    users: [ { username:'admin', salt: adminUser.saltB64, hash: adminUser.hashB64, isAdmin:true } ]
+  };
+  saveDB(db);
+  return db;
+}
+async function addUser(username, password, isAdmin=false){
+  username = username.trim();
+  if(!username) throw new Error('Invalid username');
+  const db = loadDB() || await initDBIfNeeded();
+  if(db.users.some(u => u.username.toLowerCase() === username.toLowerCase())) throw new Error('Username exists');
+  const h = await hashWithSalt(password);
+  db.users.push({ username, salt: h.saltB64, hash: h.hashB64, isAdmin: !!isAdmin });
+  saveDB(db);
+}
+function removeUser(username){
+  const db = loadDB();
+  if(!db) throw new Error('DB not found');
+  db.users = db.users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
+  saveDB(db);
+}
+async function verifyUser(username, password){
+  const db = loadDB(); if(!db) return null;
+  const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase()); if(!user) return null;
+  const saltBuf = base64ToBuf(user.salt);
+  const cand = await hashWithSalt(password, saltBuf);
+  if(cand.hashB64 === user.hash) return user;
+  return null;
+}
+async function verifyMaster(password){
+  const db = loadDB(); if(!db) return false;
+  const saltBuf = base64ToBuf(db.master.salt);
+  const cand = await hashWithSalt(password, saltBuf);
+  return cand.hashB64 === db.master.hash;
+}
+async function changeMaster(oldPwd, newPwd){
+  const ok = await verifyMaster(oldPwd);
+  if(!ok) throw new Error('Current master password incorrect');
+  const m = await hashWithSalt(newPwd);
+  const db = loadDB();
+  db.master = { salt: m.saltB64, hash: m.hashB64 };
+  saveDB(db);
+}
+async function exportEncryptedDB(masterPassword){
+  const db = loadDB(); if(!db) throw new Error('No DB available');
+  const payload = { db };
+  const enc = await encryptWithPassword(masterPassword, payload);
+  return new Blob([JSON.stringify(enc)], { type:'application/octet-stream' });
+}
+async function importEncryptedDB(masterPassword, fileText){
+  const enc = JSON.parse(fileText);
+  const payload = await decryptWithPassword(masterPassword, enc);
+  if(!payload || !payload.db) throw new Error('Invalid file content');
+  saveDB(payload.db);
+}
+
+/* PIN helpers (per user) */
+async function setPinForUser(username, pin){
+  if(!/^\d{4,8}$/.test(pin)) throw new Error('PIN must be 4–8 digits');
+  const db = loadDB();
+  if(!db) throw new Error('DB missing');
+  const user = db.users.find(u=>u.username.toLowerCase()===username.toLowerCase());
+  if(!user) throw new Error('User not found');
+  const h = await hashWithSalt(pin);
+  user.pinSalt = h.saltB64;
+  user.pinHash = h.hashB64;
+  saveDB(db);
+}
+async function verifyPinForUser(username, pin){
+  const db = loadDB(); if(!db) return false;
+  const user = db.users.find(u=>u.username.toLowerCase()===username.toLowerCase()); if(!user || !user.pinSalt) return false;
+  const saltBuf = base64ToBuf(user.pinSalt);
+  const cand = await hashWithSalt(pin, saltBuf);
+  return cand.hashB64 === user.pinHash;
+}
+
+/* WebAuthn helpers (client-side demo) */
+/* NOTE: This implementation is a client-only demo storing credential IDs in localStorage.
+   For production you must validate signatures server-side. */
+function bufferToBase64Url(buffer){
+  // convert ArrayBuffer to base64url
+  const bytes = new Uint8Array(buffer);
+  let str = '';
+  for (let i = 0; i < bytes.byteLength; i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+function base64UrlToBuffer(base64url){
+  const b64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '=');
+  const bin = atob(padded);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return arr.buffer;
+}
+
+async function registerWebAuthnForUser(username){
+  if(!window.PublicKeyCredential) throw new Error('WebAuthn not supported');
+  const db = loadDB(); if(!db) throw new Error('DB not found');
+  const user = db.users.find(u=>u.username.toLowerCase()===username.toLowerCase()); if(!user) throw new Error('User not found');
+
+  // create challenge and user id
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const userId = toUint8(username); // simple user id (not secure for production)
+
+  const pubOptions = {
+    challenge: challenge,
+    rp: { name: 'HIRU OFFICIAL', id: window.location.hostname },
+    user: { id: userId, name: username, displayName: username },
+    pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'preferred' },
+    timeout: 60000,
+    attestation: 'none'
+  };
+
+  const cred = await navigator.credentials.create({ publicKey: pubOptions });
+  if(!cred) throw new Error('Credential creation failed');
+
+  // store credential id (base64url) on user record
+  const rawId = cred.rawId;
+  user.webAuthn = user.webAuthn || {};
+  user.webAuthn.id = bufferToBase64Url(rawId);
+  // store attestation object (optional) for local verification (not validating here)
+  user.webAuthn.att = bufferToBase64Url(cred.response.attestationObject || new ArrayBuffer(0));
+  saveDB(db);
+  return true;
+}
+
+async function loginWithWebAuthn(username){
+  if(!window.PublicKeyCredential) throw new Error('WebAuthn not supported');
+  const db = loadDB(); if(!db) throw new Error('DB not found');
+  const user = db.users.find(u=>u.username.toLowerCase()===username.toLowerCase()); if(!user || !user.webAuthn || !user.webAuthn.id) throw new Error('No registered biometric for this user');
+
+  const allowId = base64UrlToBuffer(user.webAuthn.id);
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const getOptions = {
+    challenge,
+    timeout: 60000,
+    allowCredentials: [{ id: allowId, type: 'public-key', transports: ['internal'] }],
+    userVerification: 'preferred'
+  };
+
+  const assertion = await navigator.credentials.get({ publicKey: getOptions });
+  if(!assertion) throw new Error('Authentication failed');
+
+  // NOTE: we are not verifying signature here (requires server). We accept success from authenticator as login success in this demo.
+  return true;
+}
+
+/* ---------------------------
+   UI & App logic
+   --------------------------- */
+const loginBackdrop = document.getElementById('loginBackdrop');
+const usernameInput = document.getElementById('usernameInput');
+const passwordInput = document.getElementById('passwordInput');
+const loginBtn = document.getElementById('loginBtn');
+const guestBtn = document.getElementById('guestBtn');
+const pinInput = document.getElementById('pinInput');
+const pinLoginBtn = document.getElementById('pinLoginBtn');
+const webauthnRegisterBtn = document.getElementById('webauthnRegisterBtn');
+const webauthnLoginBtn = document.getElementById('webauthnLoginBtn');
+
+const appEl = document.getElementById('app');
+const currentUserEl = document.getElementById('currentUser');
+const openAdminBtn = document.getElementById('openAdmin');
+const adminPanel = document.getElementById('adminPanel');
+const usersListEl = document.getElementById('usersList');
+const newUserInput = document.getElementById('newUser');
+const newPassInput = document.getElementById('newPass');
+const addUserBtn = document.getElementById('addUserBtn');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const importFileInput = document.getElementById('importFile');
+const changeMasterBtn = document.getElementById('changeMasterBtn');
+const oldMasterInput = document.getElementById('oldMaster');
+const newMasterInput = document.getElementById('newMaster');
+const logoutBtn = document.getElementById('logoutBtn');
+
+const registerBioBtn = document.getElementById('registerBioBtn');
+const revokeBioBtn = document.getElementById('revokeBioBtn');
+const pinForUser = document.getElementById('pinForUser');
+const setPinBtn = document.getElementById('setPinBtn');
+
+let activeUser = null;
+let selectedUserForAdmin = null;
+
+/* render users list for admin and selecting users */
+function renderUsers(){
+  const db = loadDB();
+  usersListEl.innerHTML = '';
+  if(!db) return;
+  db.users.forEach(u => {
+    const div = document.createElement('div');
+    div.className = 'user-row';
+    div.innerHTML = `<div><strong>${u.username}</strong> ${u.isAdmin ? '(admin)' : ''} ${u.pinHash ? ' • PIN' : ''} ${u.webAuthn && u.webAuthn.id ? ' • Bio' : ''}</div>
+      <div style="display:flex;gap:6px"><button class="btn small" data-user="${u.username}">Select</button><button class="btn danger small" data-del="${u.username}">Delete</button></div>`;
+    usersListEl.appendChild(div);
+
+    div.querySelector('[data-user]').addEventListener('click', ()=> {
+      selectedUserForAdmin = u.username;
+      Array.from(usersListEl.querySelectorAll('.user-row')).forEach(r => r.style.outline = '');
+      div.style.outline = '2px solid rgba(96,165,250,0.12)';
+    });
+    div.querySelector('[data-del]').addEventListener('click', ()=>{
+      if(!confirm('Delete user ' + u.username + '?')) return;
+      removeUser(u.username);
+      renderUsers();
+    });
+  });
+}
+
+/* Admin area UI */
+openAdminBtn.addEventListener('click', ()=>{
+  if(!activeUser || !activeUser.isAdmin){ alert('Admin area restricted to admin users.'); return; }
+  adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
+  renderUsers();
+});
+
+/* add user */
+addUserBtn.addEventListener('click', async ()=>{
+  const uname = newUserInput.value.trim(); const pwd = newPassInput.value.trim();
+  if(!uname || !pwd) { alert('Enter username & password'); return; }
+  try{ await addUser(uname, pwd, false); newUserInput.value=''; newPassInput.value=''; renderUsers(); alert('User added'); } catch(e){ alert(e.message); }
+});
+
+/* set PIN for selected user */
+setPinBtn.addEventListener('click', async ()=>{
+  if(!selectedUserForAdmin){ alert('Select a user from the list first'); return; }
+  const pin = pinForUser.value.trim();
+  try{ await setPinForUser(selectedUserForAdmin, pin); pinForUser.value=''; renderUsers(); alert('PIN set for ' + selectedUserForAdmin); } catch(e){ alert(e.message); }
+});
+
+/* register biometric for selected user */
+registerBioBtn.addEventListener('click', async ()=>{
+  if(!selectedUserForAdmin){ alert('Select a user first'); return; }
+  try{
+    await registerWebAuthnForUser(selectedUserForAdmin);
+    renderUsers();
+    alert('Registered biometric for ' + selectedUserForAdmin);
+  }catch(e){ alert('Register failed: ' + (e.message || e)); }
+});
+
+/* revoke biometric */
+revokeBioBtn.addEventListener('click', ()=>{
+  if(!selectedUserForAdmin) { alert('Select a user first'); return; }
+  const db = loadDB(); const user = db.users.find(u=>u.username===selectedUserForAdmin);
+  if(!user || !user.webAuthn) { alert('User has no biometric registered'); return; }
+  delete user.webAuthn; saveDB(db); renderUsers(); alert('Biometric revoked for ' + selectedUserForAdmin);
+});
+
+/* export/import */
+exportBtn.addEventListener('click', async ()=> {
+  const pwd = prompt('Enter master password to encrypt export file:'); if(!pwd) return;
+  try{
+    const blob = await exportEncryptedDB(pwd);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'hvo_passwords.hvo'; document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url); alert('Exported (encrypted)');
+  }catch(e){ alert('Export failed: ' + e.message); }
+});
+importBtn.addEventListener('click', ()=> importFileInput.click());
+importFileInput.addEventListener('change', async (ev)=>{
+  const f = ev.target.files[0]; if(!f) return;
+  const txt = await f.text(); const pwd = prompt('Enter master password to decrypt imported file:'); if(!pwd) return;
+  try{ await importEncryptedDB(pwd, txt); alert('Imported'); renderUsers(); } catch(e){ alert('Import failed: ' + e.message); }
+});
+
+/* change master password */
+changeMasterBtn.addEventListener('click', async ()=> {
+  const oldP = oldMasterInput.value; const newP = newMasterInput.value;
+  if(!oldP || !newP) { alert('Provide both'); return; }
+  try{ await changeMaster(oldP, newP); oldMasterInput.value=''; newMasterInput.value=''; alert('Master changed'); } catch(e){ alert(e.message); }
+});
+
+/* Login (username + password) */
+loginBtn.addEventListener('click', async ()=>{
+  const uname = usernameInput.value.trim(); const pwd = passwordInput.value;
+  if(!uname || !pwd){ alert('Enter username/password'); return; }
+  try{
+    const user = await verifyUser(uname, pwd);
+    if(user){ activeUser = user; onLoginSuccess(); } else alert('Invalid credentials');
+  }catch(e){ alert('Error: ' + e.message); }
+});
+
+/* Guest */
+guestBtn.addEventListener('click', ()=> { activeUser = { username: 'Guest', isAdmin:false }; onLoginSuccess(); });
+
+/* PIN login */
+pinLoginBtn.addEventListener('click', async ()=>{
+  const username = usernameInput.value.trim();
+  const pin = pinInput.value.trim();
+  if(!username || !pin){ alert('Enter username and PIN'); return; }
+  try{
+    const ok = await verifyPinForUser(username, pin);
+    if(ok){ const db = loadDB(); activeUser = db.users.find(u=>u.username.toLowerCase()===username.toLowerCase()); onLoginSuccess(); } else alert('PIN invalid');
+  }catch(e){ alert('Error: ' + e.message); }
+});
+
+/* WebAuthn register/login on modal (uses username field to know which account) */
+webauthnRegisterBtn.addEventListener('click', async ()=>{
+  const username = usernameInput.value.trim();
+  if(!username){ alert('Enter username to register biometric'); return; }
+  try{ await registerWebAuthnForUser(username); alert('Registered biometric for ' + username); renderUsers(); } catch(e){ alert('Register failed: ' + (e.message || e)); }
+});
+webauthnLoginBtn.addEventListener('click', async ()=>{
+  const username = usernameInput.value.trim();
+  if(!username){ alert('Enter username to login with biometric'); return; }
+  try{
+    const ok = await loginWithWebAuthn(username);
+    if(ok){ const db = loadDB(); activeUser = db.users.find(u=>u.username.toLowerCase()===username.toLowerCase()); onLoginSuccess(); }
+  }catch(e){ alert('Biometric login failed: ' + (e.message || e)); }
+});
+
+/* Logout */
+logoutBtn.addEventListener('click', ()=> {
+  if(!confirm('Logout?')) return;
+  activeUser = null; appEl.style.display = 'none'; loginBackdrop.style.display = 'grid'; usernameInput.value=''; passwordInput.value=''; pinInput.value='';
+  adminPanel.style.display = 'none';
+});
+
+/* On successful login */
+function onLoginSuccess(){
+  loginBackdrop.style.display = 'none';
+  appEl.style.display = 'grid';
+  currentUserEl.textContent = activeUser.username + (activeUser.isAdmin ? ' (admin)' : '');
+  openAdminBtn.style.display = activeUser.isAdmin ? 'inline-block' : 'none';
+  renderUsers();
+  startApp();
+}
+
+/* ---------------------------
+   Video player logic (same as before)
+   --------------------------- */
+const player = document.getElementById('player');
+const playlistEl = document.getElementById('playlist');
+const playBtn = document.getElementById('playBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+
+const videos = [
+  { title: "Natural Live Wallpaper", src: "Natural Live wall.mp4", thumb: "img.jpg" },
+  { title: "Snowfall in Forest", src: "snowfall-in-forest.3840x2160.mp4", thumb: "2.JPG" }
+];
+
+let currentIndex = 0;
+function buildPlaylistUI(){
+  playlistEl.innerHTML = '';
+  videos.forEach((v,i)=>{
+    const tr = document.createElement('div');
+    tr.className = 'track';
+    tr.dataset.index = i;
+    tr.innerHTML = `<div class="thumb"><img src="${v.thumb}" alt=""></div>
+                    <div class="meta"><div class="track-title">${v.title}</div><div class="track-sub">${v.src.split('/').pop()}</div></div>`;
+    tr.addEventListener('click', ()=> loadIndex(i));
+    playlistEl.appendChild(tr);
+  });
+}
+function loadIndex(i, autoplay=true){
+  if(i<0||i>=videos.length) return;
+  currentIndex = i;
+  document.querySelectorAll('.track').forEach(t=> t.classList.toggle('active', Number(t.dataset.index) === i));
+  player.src = videos[i].src;
+  document.getElementById('videoTitle').textContent = videos[i].title;
+  if(autoplay) player.play();
+}
+playBtn.addEventListener('click', ()=> player.paused ? player.play() : player.pause());
+prevBtn.addEventListener('click', ()=> loadIndex((currentIndex - 1 + videos.length)%videos.length));
+nextBtn.addEventListener('click', ()=> loadIndex((currentIndex + 1)%videos.length));
+player.addEventListener('ended', ()=> loadIndex((currentIndex + 1)%videos.length));
+
+/* mini player */
+const mini = document.getElementById('mini');
+const miniVideo = document.getElementById('miniVideo');
+document.addEventListener('scroll', ()=> {
+  const rect = document.getElementById('playerWrap').getBoundingClientRect();
+  const fullyVisible = rect.top >= 0 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
+  if(!fullyVisible && !player.paused) {
+    mini.classList.add('show');
+    miniVideo.src = player.currentSrc;
+    miniVideo.currentTime = player.currentTime;
+    miniVideo.play();
+  } else {
+    mini.classList.remove('show');
+    miniVideo.pause();
+  }
+});
+mini.addEventListener('click', ()=> { window.scrollTo({top:0, behavior:'smooth'}); mini.classList.remove('show'); });
+
+/* ---------------------------
+   App startup
+   --------------------------- */
+async function startApp(){
+  await initDBIfNeeded();
+  buildPlaylistUI();
+  loadIndex(0, false);
+  // if active user has admin privileges, show admin
+  openAdminBtn.style.display = activeUser && activeUser.isAdmin ? 'inline-block' : 'none';
+}
+
+/* initialize DB if missing */
+initDBIfNeeded().then(()=> {
+  // show login modal by default; admin seeded as admin/hiru123
+});
+
+/* allow Enter to login quickly */
+passwordInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter') loginBtn.click(); });
+usernameInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter') passwordInput.focus(); });
+
+</script>
+</body>
+</html>
